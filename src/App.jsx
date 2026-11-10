@@ -19,7 +19,11 @@ async function api(path = '', options = {}) {
 }
 
 function ApplicationForm({ application, onSave, onClose }) {
-  const [form, setForm] = useState(() => Object.fromEntries(Object.keys(EMPTY_APPLICATION).map((key) => [key, application?.[key] ?? EMPTY_APPLICATION[key]])));
+  const [form, setForm] = useState(() => {
+    const initial = Object.fromEntries(Object.keys(EMPTY_APPLICATION).map((key) => [key, application?.[key] ?? EMPTY_APPLICATION[key]]));
+    if (!application) initial.appliedAt = today();
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const dialog = useRef(null);
