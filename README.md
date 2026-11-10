@@ -45,7 +45,7 @@ Pour une publication réseau, ajoutez d’abord un reverse proxy HTTPS avec auth
 - **Tableau** : vue compacte, changement de statut et mêmes actions ; le tableau défile horizontalement sur petit écran.
 - **Ajouter / modifier** : entreprise et poste obligatoires ; lien de l’offre, lieu/télétravail, date de candidature, salaire libre, contact, notes et date de prochaine relance facultatifs.
 - **Relances** : libellés relatifs (aujourd’hui, demain, dans N jours, en retard) et date complète sur les cartes et dans le tableau ; mise en évidence dès le jour prévu. Ce sont des rappels dans l’application, pas des notifications ou e-mails automatiques. Utilisez les notes pour l’historique des échanges.
-- **Archiver** masque la candidature de la liste active sans la perdre ; l’onglet Archives permet de la restaurer ou de la supprimer. La suppression définitive demande confirmation.
+- **Archiver** masque la candidature de la liste active sans la perdre ; l’onglet Archives permet de la restaurer ou de la supprimer. La suppression définitive demande confirmation. Notifications visuelles (toast) et accessibles à chaque ajout, modification ou suppression.
 - Recherche entreprise/poste insensible à la casse, focus visible et bouton d’effacement accessible au clavier (conserve filtre/tri et rend le focus au champ), filtre statut, tri par date de candidature (dates absentes en dernier).
 - Formulaire organisé en « L’opportunité » et « Le suivi », compteur de notes associé au champ (limite de 10 000 caractères). À l’ajout, la date locale du jour est préremplie et modifiable ; en édition, la date existante est conservée.
 - Le bouton lune/soleil mémorise votre thème dans ce navigateur ; le premier thème suit le système.

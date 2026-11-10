@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { EMPTY_APPLICATION, STATUSES, filterApplications, followUpLabel, statistics } from '../shared/domain.js';
 import Charts from './Charts.jsx';
+import Toast from './Toast.jsx';
 
 const dateLabel = (date) => date ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : 'Date non renseignée';
 const today = () => new Date().toLocaleDateString('sv-SE');
@@ -160,7 +161,7 @@ export default function App() {
           <div className="view-switch" aria-label="Type de vue"><button className={view === 'kanban' ? 'active' : ''} aria-label="Vue Kanban" aria-pressed={view === 'kanban'} onClick={() => setView('kanban')}>▥ <span>Kanban</span></button><button className={view === 'table' ? 'active' : ''} aria-label="Vue Tableau" aria-pressed={view === 'table'} onClick={() => setView('table')}>☷ <span>Tableau</span></button></div>
         </div>
         {error && <div className="error message" role="alert">{error} <button onClick={() => setReload((value) => value + 1)}>Réessayer</button></div>}
-        <p className="sr-only" role="status">{notice}</p>
+        <Toast message={notice} onDismiss={() => setNotice('')} />
         {loading ? <div className="empty-state" role="status">Chargement de vos candidatures…</div> : <>
           <p className="results-count">{visible.length} candidature{visible.length > 1 ? 's' : ''}{archived ? ' archivée(s)' : ''}{query || status ? ' correspondante(s)' : ''}</p>
           {applications.length === 0 && !error && <div className="welcome"><span aria-hidden="true">↗</span><div><h2>{archived ? 'Vos archives sont vides' : 'Votre prochaine opportunité vous attend'}</h2><p>{archived ? 'Les candidatures archivées restent ici, prêtes à être restaurées.' : 'Ajoutez votre première candidature pour commencer à tracer votre parcours.'}</p></div>{!archived && <button className="button secondary" onClick={() => setEditor({})}>Ajouter une candidature</button>}</div>}

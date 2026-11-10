@@ -196,4 +196,16 @@ describe('application interface', () => {
     await user.click(screen.getByRole('button', { name: 'Activer le mode clair' }));
     expect(document.documentElement.dataset.theme).toBe('light');
   });
+
+  it('displays a visible toast notification on action and allows dismissing it', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Horizon');
+    await user.click(screen.getByRole('button', { name: 'Archiver' }));
+    const toast = await screen.findByRole('status');
+    expect(toast).toHaveTextContent('Candidature mise à jour.');
+    expect(toast).toHaveClass('toast-notification');
+    await user.click(within(toast).getByRole('button', { name: 'Fermer la notification' }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
 });

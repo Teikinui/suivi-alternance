@@ -26,6 +26,9 @@ test('real browser: full lifecycle, reload persistence, filters and archives', a
   await dialog.getByLabel('Prochaine relance').fill('2026-03-27');
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(dialog).not.toBeVisible();
+  await expect(page.locator('.toast-notification')).toContainText('Candidature enregistrée.');
+  await page.getByRole('button', { name: 'Fermer la notification' }).click();
+  await expect(page.locator('.toast-notification')).not.toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Mon entreprise' })).toBeVisible();
   await expect(page.getByText('Préparer les questions')).toBeVisible();
