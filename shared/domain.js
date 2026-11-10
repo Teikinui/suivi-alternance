@@ -11,6 +11,17 @@ export const EMPTY_APPLICATION = {
   status: STATUSES[0], salary: '', contact: '', notes: '', followUpAt: '',
 };
 
+// Compare calendar days, not elapsed hours: daylight-saving changes must not shift reminders.
+export function followUpLabel(date, now = new Date()) {
+  if (!date) return '';
+  const [year, month, day] = date.split('-').map(Number);
+  const days = Math.round((Date.UTC(year, month - 1, day) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  if (days === 0) return 'Aujourd’hui';
+  if (days === 1) return 'Demain';
+  if (days > 1) return `Dans ${days} jours`;
+  return `En retard de ${-days} jour${days < -1 ? 's' : ''}`;
+}
+
 export function statistics(applications) {
   const sent = applications.filter((item) => item.status !== STATUSES[0]);
   const responses = sent.filter((item) => [STATUSES[2], STATUSES[3], STATUSES[4]].includes(item.status));

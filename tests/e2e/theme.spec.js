@@ -40,7 +40,7 @@ async function contrastReport(page) {
       checks.push({ label, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), minimum });
     }
     // Normal text, including the smaller labels, must meet WCAG AA (4.5:1).
-    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.eyebrow', '.primary', '.brand-mark', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.error']) {
+    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.eyebrow', '.primary', '.brand-mark', '.position', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.form-section legend', '.notes-count', '.error']) {
       document.querySelectorAll(selector).forEach((element, index) => {
         check(`${selector}[${index}]`, getComputedStyle(element).color, background(element), 4.5);
       });

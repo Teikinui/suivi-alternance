@@ -79,3 +79,44 @@ test('visual rendering: populated dashboard, charts, dark theme and responsive l
   await expect(page.getByRole('heading', { name: 'Studio Horizon' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('dashboard-dark.png'), fullPage: true });
 });
+
+test('UX shortcuts: keyboard search, compact mobile columns, horizontal table actions and form sections', async ({ page, request }, testInfo) => {
+  await request.post('/api/applications', { data: { company: 'Horizon UX', position: 'Développeur', status: 'Candidature envoyée' } });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Horizon UX' })).toBeVisible();
+  const empty = page.locator('.kanban-column.is-empty');
+  await expect(empty).toHaveCount(4);
+  if (testInfo.project.name === 'mobile') {
+    for (const column of await empty.all()) {
+      expect((await column.boundingBox()).height).toBeLessThan(80);
+      await expect(column.locator('.column-placeholder')).not.toBeVisible();
+    }
+  }
+  const search = page.getByRole('searchbox');
+  for (const theme of ['light', 'dark']) {
+    if (theme === 'dark') await page.getByRole('button', { name: 'Activer le mode sombre' }).click();
+    await search.fill('absent');
+    await expect(page.locator('.search-field')).toHaveCSS('outline-style', 'solid');
+    await expect(page.locator('.search-field')).toHaveCSS('outline-width', '2px');
+    // Tab to the clear button and activate it with the keyboard, not a pointer.
+    await search.press('Tab');
+    await expect(page.getByRole('button', { name: 'Effacer la recherche' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue('');
+    await expect(page.getByRole('heading', { name: 'Horizon UX' })).toBeVisible();
+  }
+  await page.getByRole('button', { name: 'Vue Tableau' }).click();
+  const buttons = page.locator('.table-actions button');
+  const boxes = await Promise.all((await buttons.all()).map((button) => button.boundingBox()));
+  expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
+  await page.getByRole('button', { name: 'Modifier', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('group', { name: 'L’opportunité' })).toBeVisible();
+  const notes = dialog.getByRole('group', { name: 'Le suivi' }).getByLabel('Notes', { exact: true });
+  await notes.fill('Bonjour');
+  await expect(notes).toHaveAccessibleDescription('7 / 10 000 caractères');
+  await expect(dialog.locator('textarea')).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await page.screenshot({ path: testInfo.outputPath('ux-form-dark.png'), fullPage: true });
+});

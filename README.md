@@ -41,12 +41,13 @@ Pour une publication réseau, ajoutez d’abord un reverse proxy HTTPS avec auth
 
 ## Utilisation
 
-- **Kanban** : À postuler, Candidature envoyée, Entretien prévu, Offre reçue, Refusé. Changez la colonne avec le sélecteur de statut de chaque carte (pas de glisser-déposer). Sur mobile, les colonnes sont empilées pour garder toutes les actions accessibles.
+- **Kanban** : À postuler, Candidature envoyée, Entretien prévu, Offre reçue, Refusé. Changez la colonne avec le sélecteur de statut de chaque carte (pas de glisser-déposer). Sur mobile, les colonnes sont empilées et les colonnes vides réduites à leur en-tête, pour garder tous les statuts visibles sans longs espaces inutiles.
 - **Tableau** : vue compacte, changement de statut et mêmes actions ; le tableau défile horizontalement sur petit écran.
 - **Ajouter / modifier** : entreprise et poste obligatoires ; lien de l’offre, lieu/télétravail, date de candidature, salaire libre, contact, notes et date de prochaine relance facultatifs.
-- **Relances** : dates affichées sur les cartes et dans le tableau, mise en évidence dès le jour prévu. Ce sont des rappels dans l’application, pas des notifications ou e-mails automatiques. Utilisez les notes pour l’historique des échanges.
+- **Relances** : libellés relatifs (aujourd’hui, demain, dans N jours, en retard) et date complète sur les cartes et dans le tableau ; mise en évidence dès le jour prévu. Ce sont des rappels dans l’application, pas des notifications ou e-mails automatiques. Utilisez les notes pour l’historique des échanges.
 - **Archiver** masque la candidature de la liste active sans la perdre ; l’onglet Archives permet de la restaurer ou de la supprimer. La suppression définitive demande confirmation.
-- Recherche entreprise/poste insensible à la casse, filtre statut, tri par date de candidature (dates absentes en dernier).
+- Recherche entreprise/poste insensible à la casse, focus visible et bouton d’effacement accessible au clavier (conserve filtre/tri et rend le focus au champ), filtre statut, tri par date de candidature (dates absentes en dernier).
+- Formulaire organisé en « L’opportunité » et « Le suivi », compteur de notes associé au champ (limite de 10 000 caractères). À l’ajout, la date locale du jour est préremplie et modifiable ; en édition, la date existante est conservée.
 - Le bouton lune/soleil mémorise votre thème dans ce navigateur ; le premier thème suit le système.
 
 ### Statistiques et graphiques
@@ -164,9 +165,9 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 
 | Vérification | Résultat |
 | --- | --- |
-| `npm test` | 22 tests API/SQLite + 12 tests React/métier réussis |
-| `npm run build` | Build Vite réussi (JS ~239 kB, ~75 kB gzip) |
-| `npm run test:e2e` | 4 tests Chromium réussis : desktop et mobile, captures clair/sombre inspectées |
+| `npm test` | 22 tests API/SQLite + 25 tests React/métier réussis |
+| `npm run build` | Build Vite réussi (JS ~240 kB, ~75 kB gzip) |
+| `npm run test:e2e` | 8 tests Chromium réussis : desktop/mobile, clavier, contrastes et invariants de palette, captures clair/sombre inspectées |
 | `npm audit` | 0 vulnérabilité signalée |
 | `docker compose config --quiet` | Réussite ; montage local `./data` confirmé par la configuration résolue |
 | `docker compose build` | Tenté, bloqué par le moteur Docker Desktop Linux arrêté (`dockerDesktopLinuxEngine` introuvable) |
@@ -194,7 +195,7 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 ├── tests/
 │   ├── api.test.js / domain.test.js / App.test.jsx / setup.js
 │   ├── e2e-server.js
-│   └── e2e/app.spec.js
+│   └── e2e/app.spec.js / theme.spec.js
 └── data/                      # Créé automatiquement, jamais versionné
 ```
 

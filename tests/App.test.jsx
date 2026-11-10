@@ -100,6 +100,52 @@ describe('application interface', () => {
     expect(await screen.findByText('Lead designer')).toBeInTheDocument();
   });
 
+  it('clears only the search and returns focus without resetting status or sort', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Horizon');
+    await user.selectOptions(screen.getByLabelText('Filtrer par statut'), 'Candidature envoyée');
+    await user.selectOptions(screen.getByLabelText('Trier par date'), 'asc');
+    const search = screen.getByRole('searchbox');
+    await user.type(search, 'absent');
+    await user.click(screen.getByRole('button', { name: 'Effacer la recherche' }));
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+    expect(screen.getByLabelText('Filtrer par statut')).toHaveValue('Candidature envoyée');
+    expect(screen.getByLabelText('Trier par date')).toHaveValue('asc');
+    expect(screen.getByRole('heading', { name: 'Horizon' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Effacer la recherche' })).not.toBeInTheDocument();
+  });
+
+  it('groups the form and updates the notes counter without changing its accessible name', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Horizon');
+    await user.click(screen.getByRole('button', { name: /Nouvelle candidature/ }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByRole('group', { name: 'L’opportunité' })).toBeInTheDocument();
+    const notes = within(dialog.getByRole('group', { name: 'Le suivi' })).getByLabelText('Notes');
+    expect(notes).toHaveAccessibleDescription('0 / 10 000 caractères');
+    await user.type(notes, 'Bonjour');
+    expect(notes).toHaveAccessibleDescription('7 / 10 000 caractères');
+    expect(notes).toHaveAttribute('maxlength', '10000');
+    await user.clear(notes);
+    expect(notes).toHaveAccessibleDescription('0 / 10 000 caractères');
+  });
+
+  it('keeps overdue styling and the absolute date alongside relative reminder labels', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 2, 25, 23, 45));
+    rows[0].followUpAt = '2026-03-24';
+    const user = userEvent.setup();
+    render(<App />);
+    const label = await screen.findByText('◷ Relance · En retard de 1 jour');
+    expect(label.closest('.reminder')).toHaveClass('due');
+    expect(within(label.closest('.reminder')).getByText('24 mars 2026')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Vue Tableau' }));
+    expect(within(screen.getByRole('table')).getByText('◷ Relance · En retard de 1 jour').closest('.reminder')).toHaveClass('due');
+  });
+
   it('changes status, archives, restores and deletes with confirmation', async () => {
     const user = userEvent.setup();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
