@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T20:48:20.268Z",
+  "title": "Design System: Candidatures",
+  "extensions": {
+    "shadows": [
+      { "name": "panel", "value": "var(--shadow)", "purpose": "Ombre ambiante existante, dépend du thème." },
+      { "name": "panel-light", "value": "0 4px 20px #26352f05", "purpose": "Panneaux clairs, profondeur très faible." },
+      { "name": "panel-dark", "value": "0 4px 20px #0002", "purpose": "Panneaux de nuit, superposition neutre." },
+      { "name": "primary-light", "value": "0 3px 8px #27775620", "purpose": "Accent d’action clair existant." },
+      { "name": "primary-dark", "value": "0 3px 12px #0002", "purpose": "Accent d’action nuit sans halo vert." },
+      { "name": "toast", "value": "0 10px 30px #0000001f", "purpose": "Notification au-dessus de la surface de travail." },
+      { "name": "dialog", "value": "0 25px 100px #0003", "purpose": "Top layer du dialogue natif." }
+    ],
+    "motion": [
+      { "name": "feedback", "value": "150ms", "purpose": "États des commandes, sans chorégraphie de chargement." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "700px" },
+      { "name": "compact", "value": "1050px" },
+      { "name": "wide-board", "value": "1500px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Action principale", "kind": "button", "refersTo": "button-primary",
+      "description": "Ajout ou enregistrement, accent du thème courant.",
+      "html": "<button class=\"ds-primary\">Nouvelle candidature</button>",
+      "css": ".ds-primary{background:var(--accent);color:var(--on-accent,#fff);border:1px solid transparent;border-radius:9px;padding:12px 18px;font:600 14px system-ui;min-height:44px}.ds-primary:hover{filter:brightness(.96)}.ds-primary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}"
+    },
+    {
+      "name": "Action secondaire", "kind": "button",
+      "description": "Action explicite bordée sans concurrence avec l’ajout.",
+      "html": "<button class=\"ds-secondary\">Archiver</button>",
+      "css": ".ds-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:12px 18px;font:600 14px system-ui;min-height:44px}.ds-secondary:hover{background:var(--surface-soft)}.ds-secondary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}"
+    },
+    {
+      "name": "Champ de recherche", "kind": "input",
+      "description": "Champ explicite avec focus de groupe.",
+      "html": "<label class=\"ds-field\">Entreprise ou poste<input placeholder=\"Rechercher…\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:var(--text);font:600 14px system-ui}.ds-field input{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font:400 16px system-ui}.ds-field input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}"
+    },
+    {
+      "name": "Navigation de suivi", "kind": "nav",
+      "description": "Deux périmètres de données, actif ou archivé.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"Périmètre\"><button aria-pressed=\"true\">Mes candidatures</button><button aria-pressed=\"false\">Archives</button></nav>",
+      "css": ".ds-tabs{display:flex;gap:24px;border-bottom:1px solid var(--border)}.ds-tabs button{color:var(--muted);background:transparent;border:0;border-bottom:2px solid transparent;padding:12px 0;min-height:44px;font:600 14px system-ui}.ds-tabs button[aria-pressed=true]{color:var(--accent);border-bottom-color:var(--accent)}.ds-tabs button:hover{text-decoration:underline}.ds-tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}"
+    },
+    {
+      "name": "Panneau", "kind": "card", "refersTo": "panel",
+      "description": "Surface de travail calme, bordure et ombre existantes.",
+      "html": "<article class=\"ds-panel\"><h3>Le rythme de vos candidatures</h3><p>Votre activité sur les 8 dernières semaines</p></article>",
+      "css": ".ds-panel{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow);font:400 14px system-ui}.ds-panel h3{font-size:16px;margin:0 0 8px}.ds-panel p{color:var(--muted);margin:0;line-height:1.6}"
+    }
+  ],
+  "narrative": {
+    "overview": "Documentation du système déjà présent dans src/styles.css et src/dashboard-extras.css. Aucune nouvelle direction de marque n’est créée.",
+    "keyCharacteristics": ["Lisibilité de l’outil de suivi", "Thème nuit ardoise/lavande", "Commandes explicites", "Données et comportements préservés"],
+    "dos": ["Préserver les palettes et libellés de statuts testés, et l’accent lavande du mode nuit.", "Corriger les contrastes et les tailles au niveau du token ou composant approprié."],
+    "donts": ["Ne pas ajouter de compte, authentification, panneau admin, métrique ou promesse commerciale.", "Ne pas consulter ou modifier ./data pour produire les captures."]
+  }
+}

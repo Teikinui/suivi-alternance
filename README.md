@@ -239,6 +239,19 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 | `docker compose config --quiet` | Réussite ; montage local `./data` confirmé par la configuration résolue |
 | `docker build -t suivi-alternance:job-import-check .` | **Réussite complète** (Docker Engine 29.6.2, build multi-stage et smoke test non-root en conteneur isolé : `/api/health`, frontend, SQLite vide ; données temporaires en mémoire, aucun montage utilisateur) |
 
+## Design et Impeccable (outillage de développement)
+
+Impeccable **4.8.2** est installé au niveau projet pour **Pi** dans `.pi/skills/impeccable/` (moteur **0.1.21**, télémétrie désactivée). Aucun outil, binaire ou rapport local Impeccable n’entre dans l’image Docker de production.
+
+- Contexte produit : [`PRODUCT.md`](PRODUCT.md) ; système visuel réellement livré : [`DESIGN.md`](DESIGN.md), complété par `.impeccable/design.json`.
+- Installation et chargement Pi : [notes du skill](.pi/skills/impeccable/PROJECT-NOTES.md).
+- Critique, audit, changements et validation de la première passe : [`docs/design-refresh.md`](docs/design-refresh.md).
+- `npm run design:detect` : détecteur source épinglé. Cette session Pi n’a pas de hook automatique : les scans sont explicites.
+- `npm run build`, puis `npm run design:preview` : aperçu de la vraie application sur **127.0.0.1:3102**, avec six candidatures fictives en **SQLite mémoire**, sans accès à `./data`. `DESIGN_PREVIEW_PORT` permet de choisir un autre port local ; arrêtez l’aperçu avec Ctrl+C après la revue.
+- `npm run test:e2e` : inclut clavier, cibles tactiles, mouvement réduit, longs contenus et largeurs **320 / 390 / 768 / 1440px**. Captures et rapports sont locaux et ignorés par Git.
+
+La passe conserve les fonctionnalités et les couleurs ardoise/lavande de nuit. Le thème clair garde ses surfaces, accents et statuts ; seules ses encres secondaires, de relance et de suppression sont renforcées pour le contraste. Aucun changement d’API, de schéma, de données ou d’authentification.
+
 ## Architecture
 
 ```text
@@ -262,6 +275,7 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 │   ├── ActionCenter.jsx           # Centre repliable « À traiter aujourd'hui », reports +2/+7j
 │   ├── DashboardExtras.jsx        # Volet repliable : objectif hebdo, funnel, checklist, domaines
 │   ├── Charts.jsx                 # Courbe hebdomadaire et répartition des statuts
+│   ├── Icon.jsx                   # Icônes SVG décoratives locales
 │   ├── Toast.jsx                  # Notifications visuelles et accessibles de confirmation
 │   ├── BookmarkletModal.jsx        # Guide, installation manuelle, destination validée et copie
 │   ├── export.js                  # Export client CSV (sécurisé formules) et JSON v1
@@ -273,7 +287,8 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 │   ├── extractors.test.jsx / OfferImport.test.jsx
 │   ├── fixtures/jobs/             # Offres locales Schema.org, LinkedIn et générique
 │   ├── e2e-server.js
-│   └── e2e/app.spec.js / dashboard.spec.js / theme.spec.js / offer-import.spec.js
+│   ├── design-preview.mjs         # Aperçu isolé de design, données fictives en mémoire
+│   └── e2e/app.spec.js / dashboard.spec.js / theme.spec.js / offer-import.spec.js / design-refresh.spec.js
 └── data/                          # Créé automatiquement, jamais versionné
 ```
 

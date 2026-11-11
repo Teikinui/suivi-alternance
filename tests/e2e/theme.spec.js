@@ -16,10 +16,10 @@ async function lightPalette(page) {
   });
 }
 
-async function contrastReport(page) {
+async function contrastReport(page, checkGraphics = true) {
   // Measure settled colors, not the intermediate values of the theme transition.
   await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))));
-  return page.evaluate(() => {
+  return page.evaluate((graphics) => {
     function luminance(color) {
       const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map((value) => {
         const channel = value / 255;
@@ -40,7 +40,7 @@ async function contrastReport(page) {
       checks.push({ label, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), minimum });
     }
     // Normal text, including the smaller labels, must meet WCAG AA (4.5:1).
-    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.eyebrow', '.primary', '.brand-mark', '.position', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.form-section legend', '.notes-count', '.error', '.action-center summary', '.action-company', '.action-count', '.action-help', '.action-contact', '.action-contact a', '.action-deadline', '.export-help', '.export-controls button', '.extra-subtitle', '.extra-badge', '.local-disclaimer', '.goal-numbers', '.goal-numbers small', '.goal-controller', '.goal-target-display', '.funnel-stage-label', '.funnel-stage-numbers', '.checklist-text', '.domain-name', '.domain-count-badge']) {
+    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.primary', '.brand-mark', '.position', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.form-section legend', '.notes-count', '.error', '.action-center summary', '.action-company', '.action-count', '.action-help', '.action-contact', '.action-contact a', '.action-deadline', '.export-help', '.export-controls button', '.extra-subtitle', '.extra-badge', '.local-disclaimer', '.goal-numbers', '.goal-numbers small', '.goal-controller', '.goal-target-display', '.funnel-stage-label', '.funnel-stage-numbers', '.checklist-text', '.domain-name', '.domain-count-badge']) {
       document.querySelectorAll(selector).forEach((element, index) => {
         check(`${selector}[${index}]`, getComputedStyle(element).color, background(element), 4.5);
       });
@@ -48,22 +48,24 @@ async function contrastReport(page) {
     document.querySelectorAll('.chart-label').forEach((element, index) => {
       check(`chart label ${index}`, getComputedStyle(element).fill, background(element), 4.5);
     });
-    const line = document.querySelector('.chart-line');
-    if (line) check('activity chart line', getComputedStyle(line).stroke, background(line), 3);
-    document.querySelectorAll('.funnel-fill, .goal-progress-bar').forEach((element, index) => {
-      check(`complementary chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
-    });
-    document.querySelectorAll('.distribution-track > div').forEach((element, index) => {
-      check(`status chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
-    });
-    document.querySelectorAll('.status-dot').forEach((element, index) => {
-      check(`status dot ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
-    });
+    if (graphics) {
+      const line = document.querySelector('.chart-line');
+      if (line) check('activity chart line', getComputedStyle(line).stroke, background(line), 3);
+      document.querySelectorAll('.funnel-fill, .goal-progress-bar').forEach((element, index) => {
+        check(`complementary chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
+      });
+      document.querySelectorAll('.distribution-track > div').forEach((element, index) => {
+        check(`status chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
+      });
+      document.querySelectorAll('.status-dot').forEach((element, index) => {
+        check(`status dot ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
+      });
+    }
     return checks;
-  });
+  }, checkGraphics);
 }
 
-test('dark palette: readable text, charts and all statuses; light palette unchanged', async ({ page, request }, testInfo) => {
+test('dark palette: readable text, charts and all statuses; light accents and statuses preserved', async ({ page, request }, testInfo) => {
   for (const archived of [false, true]) {
     const rows = await (await request.get(`/api/applications?archived=${archived}`)).json();
     for (const row of rows) await request.delete(`/api/applications/${row.id}`);
@@ -83,6 +85,9 @@ test('dark palette: readable text, charts and all statuses; light palette unchan
     logo: 'rgb(39, 119, 86)', chart: 'rgb(39, 119, 86)',
     statuses: ['#8a96a5', '#638bc8', '#b78a44', '#429a72', '#c17c82'],
   });
+  const lightReport = await contrastReport(page, false);
+  for (const check of lightReport) expect(check.ratio, `light ${check.label}: ${check.ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(check.minimum);
+  await testInfo.attach('light-text-contrast.json', { body: JSON.stringify(lightReport, null, 2), contentType: 'application/json' });
   await page.getByRole('button', { name: 'Activer le mode sombre' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(17, 24, 39)');

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { STATUSES } from '../shared/domain.js';
 
 export function weeklyActivity(applications, now = new Date()) {
@@ -21,17 +21,29 @@ export function weeklyActivity(applications, now = new Date()) {
 }
 
 export default function Charts({ applications }) {
+  const chart = useRef(null);
+  const [width, setWidth] = useState(490);
+  useLayoutEffect(() => {
+    const element = chart.current;
+    const update = (value) => setWidth(Math.max(240, Math.round(value)));
+    update(element.getBoundingClientRect().width);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => update(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const x = (index) => 32 + index * (width - 48) / 7;
   const weeks = weeklyActivity(applications);
   const max = Math.max(1, ...weeks.map((week) => week.count));
-  const points = weeks.map((week, index) => `${35 + index * 60},${125 - week.count / max * 95}`).join(' ');
+  const points = weeks.map((week, index) => `${x(index)},${130 - week.count / max * 100}`).join(' ');
   const total = applications.length;
   return <section className="charts-grid" aria-label="Graphiques des candidatures">
     <article className="chart-panel"><div className="chart-heading"><div><h2>Le rythme de vos candidatures</h2><p>Votre activité sur les 8 dernières semaines</p></div><span className="chart-tag">{weeks.reduce((sum, week) => sum + week.count, 0)} envois</span></div>
-      <svg viewBox="0 0 490 165" role="img" aria-labelledby="activity-title" aria-describedby="activity-description" className="activity-chart"><title id="activity-title">Candidatures par semaine</title><desc id="activity-description">{weeks.map((week) => `Semaine du ${week.label} : ${week.count}`).join('. ')}</desc>
-        {[30, 77.5, 125].map((y, index) => <g key={y}><line x1="35" x2="455" y1={y} y2={y} className="chart-gridline" /><text x="8" y={y + 4} className="chart-label">{Number((max * (2 - index) / 2).toFixed(1))}</text></g>)}
-        <polygon points={`35,125 ${points} 455,125`} className="chart-area" />
+      <svg ref={chart} viewBox={`0 0 ${width} 180`} role="img" aria-labelledby="activity-title" aria-describedby="activity-description" className="activity-chart"><title id="activity-title">Candidatures par semaine</title><desc id="activity-description">{weeks.map((week) => `Semaine du ${week.label} : ${week.count}`).join('. ')}</desc>
+        {[30, 80, 130].map((y, index) => <g key={y}><line x1="32" x2={width - 16} y1={y} y2={y} className="chart-gridline" /><text x="8" y={y + 4} className="chart-label">{Number((max * (2 - index) / 2).toFixed(1))}</text></g>)}
+        <polygon points={`32,130 ${points} ${width - 16},130`} className="chart-area" />
         <polyline points={points} className="chart-line" />
-        {weeks.map((week, index) => <g key={week.label}><circle cx={35 + index * 60} cy={125 - week.count / max * 95} r="4" className="chart-point"><title>{week.label} : {week.count} candidature(s)</title></circle><text x={35 + index * 60} y="153" textAnchor="middle" className="chart-label">{week.label}</text></g>)}
+        {weeks.map((week, index) => <g key={week.label}><circle cx={x(index)} cy={130 - week.count / max * 100} r="4" className="chart-point"><title>{week.label} : {week.count} candidature(s)</title></circle>{(width >= 460 || [0, 2, 4, 7].includes(index)) && <text x={x(index)} y="163" textAnchor={index === 7 ? 'end' : 'middle'} className="chart-label">{week.label}</text>}</g>)}
       </svg>
     </article>
     <article className="chart-panel"><div className="chart-heading"><div><h2>Où en êtes-vous ?</h2><p>La répartition de vos opportunités</p></div><span className="chart-tag">{total} au total</span></div>

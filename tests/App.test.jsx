@@ -140,11 +140,11 @@ describe('application interface', () => {
     rows[0].followUpAt = '2026-03-24';
     const user = userEvent.setup();
     render(<App />);
-    const label = await screen.findByText('◷ Relance · En retard de 1 jour');
+    const label = await screen.findByText('Relance · En retard de 1 jour');
     expect(label.closest('.reminder')).toHaveClass('due');
     expect(within(label.closest('.reminder')).getByText('24 mars 2026')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Vue Tableau' }));
-    expect(within(screen.getByRole('table')).getByText('◷ Relance · En retard de 1 jour').closest('.reminder')).toHaveClass('due');
+    expect(within(screen.getByRole('table')).getByText('Relance · En retard de 1 jour').closest('.reminder')).toHaveClass('due');
   });
 
   it('changes status, archives, restores and deletes with confirmation', async () => {

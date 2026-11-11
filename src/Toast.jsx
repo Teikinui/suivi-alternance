@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import Icon from './Icon.jsx';
 
 export default function Toast({ message, onDismiss, duration = 3500 }) {
   useEffect(() => {
@@ -13,7 +14,7 @@ export default function Toast({ message, onDismiss, duration = 3500 }) {
 
   return (
     <div className="toast-notification" role="status" aria-live="polite">
-      <span className="toast-icon" aria-hidden="true">✓</span>
+      <span className="toast-icon" aria-hidden="true"><Icon name="check" /></span>
       <span className="toast-message">{message}</span>
       <button
         type="button"
@@ -21,7 +22,7 @@ export default function Toast({ message, onDismiss, duration = 3500 }) {
         onClick={onDismiss}
         aria-label="Fermer la notification"
       >
-        ×
+        <Icon name="close" />
       </button>
     </div>
   );

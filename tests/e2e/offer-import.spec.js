@@ -19,7 +19,7 @@ for (const fixture of cases) {
     await page.goto('/');
     await page.getByRole('button', { name: 'Importer une offre : installer le bookmarklet' }).click();
     const guide = page.getByRole('dialog', { name: 'Installer le bookmarklet' });
-    const favorite = guide.getByRole('link', { name: '＋ Suivre l’offre' });
+    const favorite = guide.getByRole('link', { name: 'Suivre l’offre' });
     await expect(favorite).toHaveAttribute('href', /^javascript:/);
     const code = await favorite.getAttribute('href');
     // Entire external origin is fulfilled locally: no LinkedIn/third-party request occurs.
@@ -104,7 +104,7 @@ test('bookmarklet installation guide supports manual selection, invalid targets 
   await expect(guide.getByRole('alert')).toContainText('sans chemin');
   await expect(guide.getByRole('button', { name: 'Copier le code' })).toBeDisabled();
   await origin.fill(new URL(page.url()).origin);
-  await expect(guide.getByRole('link', { name: '＋ Suivre l’offre' })).toHaveAttribute('href', /^javascript:/);
+  await expect(guide.getByRole('link', { name: 'Suivre l’offre' })).toHaveAttribute('href', /^javascript:/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: testInfo.outputPath('bookmarklet-guide.png'), fullPage: true });
   await guide.getByRole('button', { name: 'Terminer' }).click();

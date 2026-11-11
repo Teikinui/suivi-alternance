@@ -107,7 +107,7 @@ it('provides a real draggable javascript URL, clipboard help and validated desti
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Importer une offre : installer le bookmarklet' }));
   const dialog = within(screen.getByRole('dialog'));
-  const link = dialog.getByRole('link', { name: '＋ Suivre l’offre' });
+  const link = dialog.getByRole('link', { name: 'Suivre l’offre' });
   expect(link.getAttribute('href')).toMatch(/^javascript:/);
   expect(link).toHaveAttribute('draggable', 'true');
   await user.click(link);

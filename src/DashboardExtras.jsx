@@ -83,6 +83,7 @@ export default function DashboardExtras({ applications = [], archived = false })
 
   return (
     <section className="dashboard-extras" aria-label="Indicateurs complémentaires et préparation">
+      <h2 className="sr-only">Indicateurs complémentaires et préparation</h2>
       <div className="dashboard-extras-grid">
         {/* Panel 1: Objectif Hebdomadaire */}
         <article className="extra-panel goal-panel" aria-label="Objectif de candidatures hebdomadaire">
