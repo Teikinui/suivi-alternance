@@ -4,6 +4,8 @@ import Charts from './Charts.jsx';
 import Toast from './Toast.jsx';
 import ActionCenter from './ActionCenter.jsx';
 import DashboardExtras from './DashboardExtras.jsx';
+import BookmarkletModal from './BookmarkletModal.jsx';
+import { clearImportLocation, parseImportFragment, parsePrefillParams } from '../shared/job-extractors/index.js';
 import { dueApplications, interviewAccess, localDate, selectApplications } from '../shared/dashboard.js';
 import { downloadExport, exportDocument } from './export.js';
 
@@ -23,10 +25,10 @@ async function api(path = '', options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
-function ApplicationForm({ application, onSave, onClose }) {
+function ApplicationForm({ application, onSave, onClose, loading = false }) {
   const [form, setForm] = useState(() => {
     const initial = Object.fromEntries(Object.keys(EMPTY_APPLICATION).map((key) => [key, application?.[key] ?? EMPTY_APPLICATION[key]]));
-    if (!application) initial.appliedAt = today();
+    if (!application?.id && !initial.appliedAt) initial.appliedAt = today();
     return initial;
   });
   const [saving, setSaving] = useState(false);
@@ -42,8 +44,9 @@ function ApplicationForm({ application, onSave, onClose }) {
   }
   return <dialog ref={dialog} className="editor" aria-labelledby="form-title" onCancel={(event) => { event.preventDefault(); if (!saving) onClose(); }}>
     <form onSubmit={submit}>
-      <div className="dialog-heading"><div><p className="eyebrow">UN NOUVEAU CHAPITRE</p><h2 id="form-title">{application ? 'Modifier la candidature' : 'Nouvelle candidature'}</h2></div><button type="button" className="icon-button" onClick={onClose} disabled={saving} aria-label="Fermer">×</button></div>
+      <div className="dialog-heading"><div><p className="eyebrow">UN NOUVEAU CHAPITRE</p><h2 id="form-title">{application?.id ? 'Modifier la candidature' : 'Nouvelle candidature'}</h2></div><button type="button" className="icon-button" onClick={onClose} disabled={saving} aria-label="Fermer">×</button></div>
       <p className="muted text-sm mb-5">Les champs marqués d’un * sont obligatoires.</p>
+      {application?.imported && <div className="import-review" role="note"><strong>Brouillon importé — rien n’est encore enregistré.</strong><p>Source détectée : {application.importSource || 'lien de préremplissage'}. Vérifiez les données avant Enregistrer. L’extraction peut être partielle ou inexacte ; les champs restent modifiables.</p></div>}
       <fieldset className="form-section"><legend>L’opportunité</legend><div className="form-grid">
         <label>Entreprise *<input autoFocus required name="company" maxLength={160} value={form.company} onChange={change} placeholder="Ex. Studio Horizon" /></label>
         <label>Poste *<input required name="position" maxLength={160} value={form.position} onChange={change} placeholder="Ex. Développeur·se full-stack" /></label>
@@ -60,7 +63,7 @@ function ApplicationForm({ application, onSave, onClose }) {
         <p id="notes-count" className="notes-count full">{form.notes.length} / 10 000 caractères</p>
       </div></fieldset>
       {error && <p role="alert" className="error mt-4">{error}</p>}
-      <div className="dialog-footer"><button type="button" className="button secondary" disabled={saving} onClick={onClose}>Annuler</button><button className="button primary" disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button></div>
+      <div className="dialog-footer"><button type="button" className="button secondary" disabled={saving} onClick={onClose}>Annuler</button><button className="button primary" disabled={saving || loading}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button></div>
     </form>
   </dialog>;
 }
@@ -101,6 +104,9 @@ export default function App() {
   const [sort, setSort] = useState('desc');
   const [view, setView] = useState('kanban');
   const [editor, setEditor] = useState(null);
+  const [showBookmarklet, setShowBookmarklet] = useState(false);
+  const [importError, setImportError] = useState('');
+  const importSequence = useRef(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -110,6 +116,29 @@ export default function App() {
     try { return localStorage.getItem('theme') || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
     catch { return 'light'; }
   });
+  useEffect(() => {
+    function receiveImport() {
+      const params = new URLSearchParams(window.location.search);
+      const recognized = window.location.hash.startsWith('#job-import') || params.get('prefill') === '1' || params.get('import') === '1';
+      if (!recognized) return;
+      try {
+        const prefill = parseImportFragment(window.location.hash) || parsePrefillParams(params);
+        if (prefill) {
+          setImportError('');
+          setArchived(false);
+          setDueOnly(false);
+          setEditor({ ...prefill, imported: true, importSequence: ++importSequence.current });
+        }
+      } catch (err) { setImportError(`Import refusé : ${err.message}`); }
+      finally {
+        // Remove untrusted import data immediately; do not replay a draft on refresh.
+        window.history.replaceState(window.history.state, '', clearImportLocation(window.location));
+      }
+    }
+    receiveImport();
+    window.addEventListener('hashchange', receiveImport);
+    return () => window.removeEventListener('hashchange', receiveImport);
+  }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try { localStorage.setItem('theme', theme); } catch { /* Storage may be disabled. */ }
@@ -167,8 +196,9 @@ export default function App() {
     busy,
   };
   return <div className="app-shell">
-    <header className="topbar"><a className="brand" href="/" aria-label="Candidatures, accueil"><span className="brand-mark">c.</span><span>candidatures<span className="brand-dot">.</span></span></a><div className="flex items-center gap-4"><span className="private-label"><span /> Votre espace personnel</span><button className="icon-button theme-toggle" aria-label={theme === 'dark' ? 'Activer le mode clair' : 'Activer le mode sombre'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? '☀' : '☾'}</button></div></header>
+    <header className="topbar"><a className="brand" href="/" aria-label="Candidatures, accueil"><span className="brand-mark">c.</span><span>candidatures<span className="brand-dot">.</span></span></a><div className="flex items-center gap-4"><button type="button" className="button secondary bookmarklet-launch" aria-label="Importer une offre : installer le bookmarklet" onClick={() => setShowBookmarklet(true)}>＋ Importer</button><span className="private-label"><span /> Votre espace personnel</span><button className="icon-button theme-toggle" aria-label={theme === 'dark' ? 'Activer le mode clair' : 'Activer le mode sombre'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? '☀' : '☾'}</button></div></header>
     <main>
+      {importError && <div className="error message" role="alert">{importError} Aucune candidature créée. Utilisez la saisie manuelle ou réessayez depuis l’offre.<button type="button" onClick={() => setImportError('')}>Fermer l’erreur d’import</button></div>}
       <section className="page-heading"><div><p className="eyebrow">VOTRE PROCHAIN CHAPITRE COMMENCE ICI</p><h1>Chaque candidature,<br className="mobile-break" /> une nouvelle possibilité<span className="brand-dot">.</span></h1><p className="muted">Un peu d’organisation. Beaucoup de perspectives.</p></div><button className="button primary new-button" disabled={archived || loading || busy} onClick={() => setEditor({})}><span aria-hidden="true">＋</span> Nouvelle candidature</button></section>
       <section className="stats-grid" aria-label={archived ? 'Statistiques des archives' : 'Statistiques des candidatures actives'}>
         {[[stats.total, 'Candidatures', '↗', 'Toutes vos opportunités'], [`${stats.responseRate}%`, 'Taux de réponse', '◉', 'Parmi les candidatures envoyées'], [stats.interviews, 'Entretiens prévus', '◷', 'De belles rencontres à venir'], [stats.rejected, 'Refus', '↳', 'On avance, on apprend'], [`${access.rate}%`, 'Accès aux entretiens', '◎', `${access.reached} entretien(s) ou offre(s) / ${access.sent} envoyée(s)`]].map(([value, label, icon, detail], index) => <div className={`stat-card stat-${index}`} key={label}><div className="stat-top"><span>{label}</span><span className="stat-icon" aria-hidden="true">{icon}</span></div><strong>{value}</strong><p>{detail}</p></div>)}
@@ -206,6 +236,7 @@ export default function App() {
       </section>
       <footer className="footer"><span>Fait pour avancer, à votre rythme.</span><span>Vos données restent chez vous · SQLite</span></footer>
     </main>
-    {editor && <ApplicationForm application={editor.id ? editor : null} onSave={save} onClose={() => setEditor(null)} />}
+    {editor && <ApplicationForm key={editor.imported ? `import-${editor.importSequence}` : editor.id || 'new'} application={Object.keys(editor).length > 0 ? editor : null} loading={loading} onSave={save} onClose={() => setEditor(null)} />}
+    {showBookmarklet && <BookmarkletModal onClose={() => setShowBookmarklet(false)} />}
   </div>;
 }

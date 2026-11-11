@@ -50,6 +50,41 @@ Pour une publication réseau, ajoutez d’abord un reverse proxy HTTPS avec auth
 - Formulaire organisé en « L’opportunité » et « Le suivi », compteur de notes associé au champ (limite de 10 000 caractères). À l’ajout, la date locale du jour est préremplie et modifiable ; en édition, la date existante est conservée.
 - Le bouton lune/soleil mémorise votre thème dans ce navigateur ; le premier thème suit le système.
 
+### Importer une offre avec le bookmarklet
+
+Le bouton **＋ Importer** dans l’en-tête ouvre un guide d’installation. Le bookmarklet est un favori contenant du JavaScript, exécuté **uniquement lorsque vous le cliquez sur une page d’offre ouverte**. Aucune extension n’est nécessaire ; l’extension navigateur est reportée.
+
+**Installation (desktop recommandé)**
+
+1. Démarrez votre application et ouvrez-la à son adresse habituelle (par exemple `http://localhost:3000`).
+2. Cliquez **＋ Importer** et vérifiez l’adresse de destination. Elle doit être l’origine HTTP(S) de votre application, sans chemin, paramètres, fragment ou identifiants. Une autre adresse/port nécessite de réinstaller le favori.
+3. Affichez la barre de favoris (Chrome/Firefox : Ctrl/Cmd + Maj + B) puis glissez **＋ Suivre l’offre** dans cette barre. Cliquez sur ce favori depuis une offre, pas sur le lien du guide.
+4. Alternative : **Copier le code**, créez un favori « Suivre l’offre », puis collez le code dans son champ adresse. Si le presse-papiers est bloqué, ouvrez **Installation manuelle et code**, puis **Sélectionner le code** et copiez-le manuellement. Vérifiez que le préfixe `javascript:` est conservé.
+
+**Utilisation et confirmation obligatoire**
+
+1. Ouvrez une **page détaillée d’offre**, pas une liste de recherche, puis cliquez sur le favori installé.
+2. Un nouvel onglet de l’application présente une **nouvelle candidature non enregistrée**, initialement « À postuler ». Aucun appel de création n’est effectué à l’ouverture du brouillon.
+3. Vérifiez et corrigez entreprise, poste, lien, lieu/télétravail, salaire et extrait de description dans les notes. L’extraction peut être incomplète ou se tromper ; entreprise/poste restent obligatoires pour enregistrer. La date locale du jour est proposée et modifiable, sans remplacer les dates des candidatures déjà existantes.
+4. **Enregistrer** crée la candidature ; **Annuler** ne crée rien. Recharger après annulation ne réimporte pas le brouillon : les paramètres d’import sont retirés de la barre d’adresse dès leur traitement. Rien n’est soumis au recruteur ni sur le site de l’offre.
+
+**Extraction et limites**
+
+- Priorité au **JSON-LD Schema.org `JobPosting`** (objet, tableaux, graphes et entités imbriquées), puis adaptateur **LinkedIn best effort** sur son véritable domaine, puis métadonnées OpenGraph/Twitter/titre comme secours. Les données prioritaires non vides ne sont pas écrasées par une heuristique de moindre priorité.
+- Les mêmes fonctions modulaires, sans dépendance à un serveur, sont incorporées dans le favori : pas de deuxième extracteur indépendant. Le snippet de description est limité à 500 caractères ; aucune extraction exhaustive ni visite de liens secondaires.
+- Les URL relatives sont résolues ; les paramètres de tracking usuels sont retirés mais les paramètres fonctionnels d’identification (`jobId`, etc.) sont conservés. Sur une vue LinkedIn avec `currentJobId`, le lien détaillé correspondant est proposé. Vérifiez toujours qu’il correspond à l’offre choisie, notamment lorsqu’une page décrit plusieurs postes.
+- Les sites peuvent modifier leurs sélecteurs, charger tardivement les informations ou bloquer les favoris JavaScript via leur CSP. Les navigateurs internes, PDF, pages `file:`, `about:` et pages protégées du navigateur ne sont pas pris en charge. Certains navigateurs mobiles ne permettent pas l’installation ou l’exécution de bookmarklets.
+- Si rien ne s’ouvre, vérifiez que l’application est démarrée, que le favori contient toujours le code complet et que le navigateur autorise l’ouverture du nouvel onglet. Si la CSP ou le site bloque l’exécution, **utilisez la saisie manuelle** : aucun contournement de connexion, d’anti-bot, d’authentification ou de politique de sécurité n’est livré.
+- Tests sur fixtures locales : ils ne garantissent pas la compatibilité avec chaque version actuelle des sites tiers. L’import CSV/JSON de sauvegardes reste distinct et n’est pas implémenté.
+
+**Sécurité et confidentialité**
+
+- Aucune route de scraping, requête réseau d’extraction, lecture de cookies/stockage du site tiers, injection de script distant, automatisation de candidature ou soumission tierce. Seule la page ouverte est lue à la demande.
+- Le brouillon utilise un fragment `#job-import=…` versionné et encodé, **pas des paramètres de requête**. Le fragment n’est pas envoyé dans les requêtes HTTP ni les logs d’accès ; il n’est toutefois **pas chiffré** et reste brièvement visible dans l’URL du navigateur. Ne partagez pas les liens de brouillon contenant des informations privées.
+- Le nouvel onglet est ouvert avec `noopener,noreferrer`. Le fragment est supprimé de l’entrée d’historique courante après traitement. Les anciens liens du prototype `?prefill=1` / `?import=1` restent acceptés après validation, mais leurs paramètres sont visibles par le serveur lors de la navigation : utilisez le nouveau favori pour les nouveaux imports.
+- Types, taille, version et champs autorisés sont contrôlés ; seuls les liens absolus HTTP(S) sans identifiants sont acceptés. ID, archive, horodatages et statut ne peuvent pas être injectés par le nouveau format. Le HTML importé est traité comme du texte, jamais exécuté. Un import refusé affiche une erreur et ne crée rien.
+- Maximum : fragment de 65 000 caractères, JSON décodé de 16 000 caractères, limites de champs identiques au formulaire. Aucun changement de schéma SQLite ni migration de données.
+
 ### Centre d’action et filtre de relances
 
 « **À traiter aujourd’hui** » est repliable au clavier et liste les candidatures **actives** ayant une date de relance aujourd’hui ou antérieure, tous statuts confondus. Les plus anciennes apparaissent d’abord. Les candidatures archivées, sans échéance ou à échéance future n’y figurent pas. Cette liste ne dépend pas de la recherche ni des filtres du tableau.
@@ -90,7 +125,7 @@ Les boutons d’export ne nécessitent aucune nouvelle route API ni service tier
 - Le CSV utilise UTF-8 avec BOM, une virgule comme séparateur, CRLF entre enregistrements, tous les champs entre guillemets et les guillemets internes doublés. Les virgules/retours à la ligne dans les notes restent dans leur cellule. Dans un tableur, sélectionnez UTF-8 et séparateur virgule si nécessaire.
 - Pour réduire le risque de formules de tableur, les cellules textuelles commençant par `=`, `+`, `-`, `@` (même après espaces), tabulation ou retour ligne sont préfixées d’une apostrophe dans le CSV. Utilisez **JSON** pour une copie textuelle sans cette transformation.
 
-**Confidentialité :** ces fichiers contiennent vos notes, contacts et données personnelles. Stockez-les en lieu sûr ; ne les commitez pas. Aucun import automatique n’est livré ; CSV/JSON ne remplacent pas la sauvegarde cohérente du dossier SQLite décrite ci-dessous.
+**Confidentialité :** ces fichiers contiennent vos notes, contacts et données personnelles. Stockez-les en lieu sûr ; ne les commitez pas. Aucun import de sauvegarde CSV/JSON n’est livré ; ces exports ne remplacent pas la sauvegarde cohérente du dossier SQLite décrite ci-dessous.
 
 ## Sauvegarde fiable
 
@@ -197,12 +232,12 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 
 | Vérification | Résultat |
 | --- | --- |
-| `npm test` | 22 tests API/SQLite + 77 tests Vitest (composants React, domaine, exports et extras) = **99 tests réussis** |
-| `npm run build` | Build Vite réussi (JS ~256 kB, ~79 kB gzip, CSS ~30 kB, ~7 kB gzip) |
-| `npm run test:e2e` | **14 tests Chromium réussis** : desktop/mobile, action center, exports réels CSV/JSON, panels complémentaires, contrastes WCAG AA et captures d’écran |
+| `npm test` | 22 tests API/SQLite + 121 tests Vitest (dont extraction, validation et formulaire d’import) = **143 tests réussis** |
+| `npm run build` | Build Vite réussi (JS ~271 kB, ~84 kB gzip, CSS ~32 kB, ~8 kB gzip) |
+| `npm run test:e2e` | **24 tests Chromium réussis** : desktop/mobile, dashboard existant, vrais bookmarklets du build sur fixtures locales, préremplissage et sécurité des imports |
 | `npm audit` | 0 vulnérabilité signalée |
 | `docker compose config --quiet` | Réussite ; montage local `./data` confirmé par la configuration résolue |
-| `docker compose build` | **Réussite complète** (Docker Engine 29.6.2, build multi-stage et test conteneur isolé avec `/api/health` OK) |
+| `docker build -t suivi-alternance:job-import-check .` | **Réussite complète** (Docker Engine 29.6.2, build multi-stage et smoke test non-root en conteneur isolé : `/api/health`, frontend, SQLite vide ; données temporaires en mémoire, aucun montage utilisateur) |
 
 ## Architecture
 
@@ -219,7 +254,8 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 ├── shared/
 │   ├── domain.js                  # Statuts, filtres, calculs statistiques, libellés relatifs
 │   ├── dashboard.js               # Sélection filtrée, relances dues, accès aux entretiens, liens contacts
-│   └── dashboard-extras.js        # Objectif hebdomadaire, funnel actuel, checklist, domaines d'offres
+│   ├── dashboard-extras.js        # Objectif hebdomadaire, funnel actuel, checklist, domaines d'offres
+│   └── job-extractors/            # Schema.org, LinkedIn, métadonnées, pipeline partagé et validation
 ├── src/
 │   ├── main.jsx
 │   ├── App.jsx                    # Kanban/tableau, formulaires, filtres relances, archives, thème
@@ -227,14 +263,17 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 │   ├── DashboardExtras.jsx        # Volet repliable : objectif hebdo, funnel, checklist, domaines
 │   ├── Charts.jsx                 # Courbe hebdomadaire et répartition des statuts
 │   ├── Toast.jsx                  # Notifications visuelles et accessibles de confirmation
+│   ├── BookmarkletModal.jsx        # Guide, installation manuelle, destination validée et copie
 │   ├── export.js                  # Export client CSV (sécurisé formules) et JSON v1
 │   ├── styles.css                 # Tailwind + composants principaux et responsive
 │   └── dashboard-extras.css       # Styles dédiés aux indicateurs complémentaires
 ├── tests/
 │   ├── api.test.js / domain.test.js / App.test.jsx / setup.js
 │   ├── dashboard.test.js / DashboardExtras.test.jsx / Toast.test.jsx
+│   ├── extractors.test.jsx / OfferImport.test.jsx
+│   ├── fixtures/jobs/             # Offres locales Schema.org, LinkedIn et générique
 │   ├── e2e-server.js
-│   └── e2e/app.spec.js / dashboard.spec.js / theme.spec.js
+│   └── e2e/app.spec.js / dashboard.spec.js / theme.spec.js / offer-import.spec.js
 └── data/                          # Créé automatiquement, jamais versionné
 ```
 
