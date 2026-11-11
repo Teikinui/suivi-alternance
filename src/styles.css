@@ -201,4 +201,22 @@ textarea { resize: vertical; }
 .toast-close:hover { color: var(--text); background: var(--surface-soft); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 700px) { .toast-notification { left: 16px; right: 16px; bottom: 16px; justify-content: space-between; } }
+.bookmarklet-step h3, .bookmarklet-step h4 { font-size: 14px; font-weight: 650; margin: 0 0 8px; color: var(--text); }
+.bookmarklet-launch { padding: 9px 12px; font-size: 12px; }
+.bookmarklet-intro, .bookmarklet-step, .bookmarklet-limit, .bookmarklet-feedback { color: var(--text); font-size: 13px; line-height: 1.7; }
+.bookmarklet-step { margin-top: 22px; }
+.bookmarklet-step > label, .bookmarklet-manual label { display: block; font-weight: 600; margin: 10px 0 6px; }
+.bookmarklet-step ol { list-style: decimal; padding-left: 22px; margin: 8px 0; }
+.bookmarklet-step li { margin: 6px 0; }
+.bookmarklet-step input { margin-bottom: 6px; }
+.bookmarklet-step .error { margin-top: 10px; }
+.bookmarklet-manual summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.bookmarklet-manual textarea { font-family: ui-monospace, monospace; font-size: 11px; margin-bottom: 8px; }
+.bookmarklet-limit { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 16px; }
+.bookmarklet-feedback { margin-top: 12px; }
+.import-review { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 12px; line-height: 1.7; margin-bottom: 20px; }
+.bookmarklet-drag-area { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0 15px; }
+.bookmarklet-badge { cursor: grab; padding: 10px 18px; border-radius: 9px; }
+.bookmarklet-badge:active { cursor: grabbing; }
+.bookmarklet-badge[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
