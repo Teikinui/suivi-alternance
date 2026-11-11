@@ -1,0 +1,309 @@
+/* Dashboard Extras: Objectif Hebdomadaire, Funnel, Checklist Entretien, Canaux d'offres */
+.dashboard-extras {
+  margin-bottom: 28px;
+}
+
+.dashboard-extras-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.extra-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.extra-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.extra-header h3 {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+
+.extra-subtitle {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.extra-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 4px 9px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.local-disclaimer {
+  font-size: 10px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+/* 1. Objectif Hebdomadaire */
+.goal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.goal-status-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.goal-numbers {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.8px;
+}
+
+.goal-numbers small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.goal-progress-track {
+  height: 8px;
+  background: var(--surface-soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.goal-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+}
+
+.goal-controller {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.goal-buttons {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.goal-btn {
+  background: none;
+  border: 0;
+  color: var(--text);
+  width: 32px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.goal-btn:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+
+.goal-target-display {
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 2. Funnel de Statuts (utilise les classes et variables existantes .status-1, .status-2, .status-3) */
+.funnel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.funnel-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.funnel-stage-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.funnel-stage-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.funnel-stage-numbers {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.funnel-track {
+  height: 10px;
+  background: var(--surface-soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.funnel-fill {
+  height: 100%;
+  background-color: var(--status-color);
+  border-radius: inherit;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 3. Checklist Entretien */
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.checklist-item.is-done .checklist-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.checklist-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.checklist-reset-btn {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 0;
+  cursor: pointer;
+}
+
+.checklist-reset-btn:hover {
+  color: var(--text);
+}
+
+/* 4. Canaux d'offres / Domaines */
+.domains-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.domain-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+
+.domain-name {
+  font-weight: 550;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.domain-count-badge {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.domains-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 14px 0;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 1050px) {
+  .dashboard-extras-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .extra-panel {
+    padding: 16px;
+  }
+  .goal-numbers {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-progress-bar,
+  .funnel-fill {
+    transition: none !important;
+  }
+}

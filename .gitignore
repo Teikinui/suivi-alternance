@@ -6,6 +6,8 @@ data/
 *.db
 *.db-*
 backups/
+candidatures-*.csv
+candidatures-*.json
 coverage/
 test-results/
 playwright-report/

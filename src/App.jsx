@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { EMPTY_APPLICATION, STATUSES, filterApplications, followUpLabel, statistics } from '../shared/domain.js';
+import { EMPTY_APPLICATION, STATUSES, followUpLabel, statistics } from '../shared/domain.js';
 import Charts from './Charts.jsx';
 import Toast from './Toast.jsx';
+import ActionCenter from './ActionCenter.jsx';
+import DashboardExtras from './DashboardExtras.jsx';
+import { dueApplications, interviewAccess, localDate, selectApplications } from '../shared/dashboard.js';
+import { downloadExport, exportDocument } from './export.js';
 
 const dateLabel = (date) => date ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : 'Date non renseignée';
-const today = () => new Date().toLocaleDateString('sv-SE');
+const today = () => localDate();
 const statusClass = (status) => `status-${STATUSES.indexOf(status)}`;
 
 async function api(path = '', options = {}) {
@@ -85,6 +89,13 @@ export default function App() {
   const [applications, setApplications] = useState([]);
   const [archived, setArchived] = useState(false);
   const [query, setQuery] = useState('');
+  const [dueOnly, setDueOnly] = useState(false);
+  const [exportSelection, setExportSelection] = useState('filtered');
+  const [, setCurrentDay] = useState(today);
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentDay(today()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const searchInput = useRef(null);
   const [status, setStatus] = useState('');
   const [sort, setSort] = useState('desc');
@@ -132,11 +143,22 @@ export default function App() {
         setApplications((items) => updated.archived !== archived ? items.filter((old) => old.id !== item.id) : items.map((old) => old.id === item.id ? updated : old));
         setNotice('Candidature mise à jour.');
       }
-    } catch (err) { setError(err.message); } finally { setBusy(false); }
+      return true;
+    } catch (err) { setError(err.message); return false; } finally { setBusy(false); }
   }
-  const visible = filterApplications(applications, { query, status, sort });
+  const filters = { archived, query, status, sort, dueOnly: !archived && dueOnly };
+  const visible = selectApplications(applications, filters);
   const stats = statistics(applications);
-  const dueCount = applications.filter((item) => item.followUpAt && item.followUpAt <= today()).length;
+  const access = interviewAccess(applications);
+  const due = dueApplications(applications);
+  const dueCount = due.length;
+  function exportRows(format) {
+    try {
+      const document = exportDocument(applications, { ...filters, selection: exportSelection });
+      downloadExport(document, format);
+      setNotice(`Export ${format.toUpperCase()} préparé : ${document.applications.length} candidature(s).`);
+    } catch { setError('Impossible de préparer le téléchargement. Réessayez.'); }
+  }
   const actions = {
     onEdit: setEditor,
     onArchive: (item) => mutate(item, { archived: !item.archived }),
@@ -149,23 +171,35 @@ export default function App() {
     <main>
       <section className="page-heading"><div><p className="eyebrow">VOTRE PROCHAIN CHAPITRE COMMENCE ICI</p><h1>Chaque candidature,<br className="mobile-break" /> une nouvelle possibilité<span className="brand-dot">.</span></h1><p className="muted">Un peu d’organisation. Beaucoup de perspectives.</p></div><button className="button primary new-button" disabled={archived || loading || busy} onClick={() => setEditor({})}><span aria-hidden="true">＋</span> Nouvelle candidature</button></section>
       <section className="stats-grid" aria-label={archived ? 'Statistiques des archives' : 'Statistiques des candidatures actives'}>
-        {[[stats.total, 'Candidatures', '↗', 'Toutes vos opportunités'], [`${stats.responseRate}%`, 'Taux de réponse', '◉', 'Parmi les candidatures envoyées'], [stats.interviews, 'Entretiens prévus', '◷', 'De belles rencontres à venir'], [stats.rejected, 'Refus', '↳', 'On avance, on apprend']].map(([value, label, icon, detail], index) => <div className={`stat-card stat-${index}`} key={label}><div className="stat-top"><span>{label}</span><span className="stat-icon" aria-hidden="true">{icon}</span></div><strong>{value}</strong><p>{detail}</p></div>)}
+        {[[stats.total, 'Candidatures', '↗', 'Toutes vos opportunités'], [`${stats.responseRate}%`, 'Taux de réponse', '◉', 'Parmi les candidatures envoyées'], [stats.interviews, 'Entretiens prévus', '◷', 'De belles rencontres à venir'], [stats.rejected, 'Refus', '↳', 'On avance, on apprend'], [`${access.rate}%`, 'Accès aux entretiens', '◎', `${access.reached} entretien(s) ou offre(s) / ${access.sent} envoyée(s)`]].map(([value, label, icon, detail], index) => <div className={`stat-card stat-${index}`} key={label}><div className="stat-top"><span>{label}</span><span className="stat-icon" aria-hidden="true">{icon}</span></div><strong>{value}</strong><p>{detail}</p></div>)}
       </section>
+      <details className="metric-notes"><summary>Comprendre les indicateurs</summary><p>Accès aux entretiens = (statuts « Entretien prévu » + « Offre reçue ») / candidatures hors « À postuler » × 100. Chaque candidature compte une fois. Estimation du statut actuel, pas un historique ; 0 % si aucune candidature envoyée. Les indicateurs portent sur tout l’onglet, indépendamment des filtres.</p><p>Délai moyen de réponse indisponible : aucune date de première réponse n’est enregistrée. La date de modification ne mesure pas une réponse ; aucun délai n’est inventé.</p></details>
+      {!loading && !archived && (!error || applications.length > 0) && <ActionCenter applications={due} busy={busy} onSnooze={mutate} onEdit={setEditor} />}
       {!loading && <Charts applications={applications} />}
+      {!loading && <details className="extras-disclosure"><summary>Objectif, préparation et domaines d’offres</summary><DashboardExtras applications={applications} archived={archived} /></details>}
       <section className="workspace" aria-label="Suivi des candidatures">
-        <div className="workspace-heading"><div className="tabs"><button className={!archived ? 'active' : ''} disabled={busy} onClick={() => setArchived(false)} aria-pressed={!archived}>Mes candidatures</button><button className={archived ? 'active' : ''} disabled={busy} onClick={() => setArchived(true)} aria-pressed={archived}>Archives</button></div><span className="muted text-sm">{dueCount > 0 ? `${dueCount} relance${dueCount > 1 ? 's' : ''} à prévoir` : 'Une étape à la fois ✨'}</span></div>
+        <div className="workspace-heading"><div className="tabs"><button className={!archived ? 'active' : ''} disabled={busy} onClick={() => { setArchived(false); setDueOnly(false); }} aria-pressed={!archived}>Mes candidatures</button><button className={archived ? 'active' : ''} disabled={busy} onClick={() => { setArchived(true); setDueOnly(false); }} aria-pressed={archived}>Archives</button></div><span className="muted text-sm">{dueCount > 0 ? `${dueCount} relance${dueCount > 1 ? 's' : ''} à prévoir` : 'Une étape à la fois ✨'}</span></div>
         <div className="toolbar">
           <div className="search-field"><span aria-hidden="true">⌕</span><label className="sr-only" htmlFor="application-search">Rechercher une entreprise ou un poste</label><input ref={searchInput} id="application-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une entreprise, un poste…" />{query && <button type="button" className="search-clear" aria-label="Effacer la recherche" onClick={() => { setQuery(''); searchInput.current.focus(); }}>×</button>}</div>
           <label><span className="sr-only">Filtrer par statut</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Tous les statuts</option>{STATUSES.map((value) => <option key={value}>{value}</option>)}</select></label>
           <label><span className="sr-only">Trier par date</span><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="desc">Date : plus récentes</option><option value="asc">Date : plus anciennes</option></select></label>
           <div className="view-switch" aria-label="Type de vue"><button className={view === 'kanban' ? 'active' : ''} aria-label="Vue Kanban" aria-pressed={view === 'kanban'} onClick={() => setView('kanban')}>▥ <span>Kanban</span></button><button className={view === 'table' ? 'active' : ''} aria-label="Vue Tableau" aria-pressed={view === 'table'} onClick={() => setView('table')}>☷ <span>Tableau</span></button></div>
         </div>
+        <div className="dashboard-tools">
+          {!archived && <button type="button" className={`button ${dueOnly ? 'primary' : 'secondary'}`} aria-pressed={dueOnly} disabled={loading} onClick={() => setDueOnly(!dueOnly)}>Relances à faire ({dueCount})</button>}
+          <div className="export-controls" role="group" aria-label="Exporter les candidatures">
+            <label><span className="sr-only">Périmètre de l’export</span><select value={exportSelection} onChange={(event) => setExportSelection(event.target.value)}><option value="filtered">Résultats filtrés ({visible.length})</option><option value="tab">Tout l’onglet {archived ? 'Archives' : 'Mes candidatures'} ({applications.length})</option></select></label>
+            <button type="button" className="button secondary" disabled={loading || busy || Boolean(error)} onClick={() => exportRows('csv')}>Exporter CSV</button>
+            <button type="button" className="button secondary" disabled={loading || busy || Boolean(error)} onClick={() => exportRows('json')}>Exporter JSON</button>
+          </div>
+          <p className="export-help">Export {archived ? 'des archives' : 'des candidatures actives'} uniquement · Les fichiers contiennent vos données personnelles.</p>
+        </div>
         {error && <div className="error message" role="alert">{error} <button onClick={() => setReload((value) => value + 1)}>Réessayer</button></div>}
         <Toast message={notice} onDismiss={() => setNotice('')} />
         {loading ? <div className="empty-state" role="status">Chargement de vos candidatures…</div> : <>
-          <p className="results-count">{visible.length} candidature{visible.length > 1 ? 's' : ''}{archived ? ' archivée(s)' : ''}{query || status ? ' correspondante(s)' : ''}</p>
+          <p className="results-count">{visible.length} candidature{visible.length > 1 ? 's' : ''}{archived ? ' archivée(s)' : ''}{query || status || dueOnly ? ' correspondante(s)' : ''}</p>
           {applications.length === 0 && !error && <div className="welcome"><span aria-hidden="true">↗</span><div><h2>{archived ? 'Vos archives sont vides' : 'Votre prochaine opportunité vous attend'}</h2><p>{archived ? 'Les candidatures archivées restent ici, prêtes à être restaurées.' : 'Ajoutez votre première candidature pour commencer à tracer votre parcours.'}</p></div>{!archived && <button className="button secondary" onClick={() => setEditor({})}>Ajouter une candidature</button>}</div>}
-          {applications.length > 0 && visible.length === 0 && <div className="empty-state">Aucune candidature ne correspond à vos filtres. <button className="text-link" onClick={() => { setQuery(''); setStatus(''); }}>Réinitialiser</button></div>}
+          {applications.length > 0 && visible.length === 0 && <div className="empty-state">Aucune candidature ne correspond à vos filtres. <button className="text-link" onClick={() => { setQuery(''); setStatus(''); setDueOnly(false); }}>Réinitialiser</button></div>}
           {view === 'kanban' ? <div className="kanban">{STATUSES.filter((value) => !status || status === value).map((column) => <section className={`kanban-column ${statusClass(column)}${visible.some((item) => item.status === column) ? '' : ' is-empty'}`} key={column} aria-label={column}><div className="column-heading"><h2><span className="status-dot" />{column}</h2><span className="column-count">{visible.filter((item) => item.status === column).length}</span></div><div className="column-body">{visible.filter((item) => item.status === column).map((item) => <Card key={item.id} item={item} {...actions} />)}{!visible.some((item) => item.status === column) && <div className="column-placeholder">Les possibilités prennent forme ici</div>}</div></section>)}</div>
           : <div className="table-scroll"><table><caption className="sr-only">Liste des candidatures</caption><thead><tr><th>Entreprise / poste</th><th>Statut</th><th>Lieu / salaire</th><th>Candidature</th><th>Relance</th><th>Actions</th></tr></thead><tbody>{visible.map((item) => <tr key={item.id}><td><button className="table-company" onClick={() => setEditor(item)}>{item.company}</button><p className="muted">{item.position}</p>{item.url && <a className="offer-link" href={item.url} target="_blank" rel="noopener noreferrer">Voir l’offre ↗</a>}</td><td><select aria-label={`Statut de ${item.company} — ${item.position}`} className={`card-status ${statusClass(item.status)}`} value={item.status} disabled={busy} onChange={(event) => actions.onStatus(item, event.target.value)}>{STATUSES.map((value) => <option key={value}>{value}</option>)}</select></td><td>{item.location || '—'}<p className="muted">{item.salary}</p></td><td>{dateLabel(item.appliedAt)}</td><td>{item.followUpAt ? <Reminder date={item.followUpAt} /> : '—'}</td><td><div className="table-actions"><button disabled={busy} onClick={() => setEditor(item)}>Modifier</button><button disabled={busy} onClick={() => actions.onArchive(item)}>{archived ? 'Restaurer' : 'Archiver'}</button><button disabled={busy} className="delete-button" onClick={() => actions.onDelete(item)}>Supprimer</button></div></td></tr>)}</tbody></table></div>}
         </>}

@@ -7,7 +7,7 @@ export default defineConfig({
   server: { proxy: { '/api': 'http://localhost:3000' } },
   test: {
     environment: 'jsdom',
-    include: ['tests/**/*.test.jsx', 'tests/domain.test.js'],
+    include: ['tests/**/*.test.jsx', 'tests/domain.test.js', 'tests/dashboard.test.js'],
     setupFiles: ['./tests/setup.js'],
     restoreMocks: true,
   },

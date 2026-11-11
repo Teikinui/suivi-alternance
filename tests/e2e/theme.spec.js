@@ -40,7 +40,7 @@ async function contrastReport(page) {
       checks.push({ label, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), minimum });
     }
     // Normal text, including the smaller labels, must meet WCAG AA (4.5:1).
-    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.eyebrow', '.primary', '.brand-mark', '.position', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.form-section legend', '.notes-count', '.error']) {
+    for (const selector of ['h1', '.muted', '.stat-top', '.stat-card p', '.chart-heading p', '.chart-tag', '.eyebrow', '.primary', '.brand-mark', '.position', '.card-detail', '.card-date', '.card-notes', '.card-status', '.card-actions button', '.reminder.due', '.offer-link', '.column-heading', '.column-count', '.footer', '.editor label', '.editor input', '.form-section legend', '.notes-count', '.error', '.action-center summary', '.action-company', '.action-count', '.action-help', '.action-contact', '.action-contact a', '.action-deadline', '.export-help', '.export-controls button', '.extra-subtitle', '.extra-badge', '.local-disclaimer', '.goal-numbers', '.goal-numbers small', '.goal-controller', '.goal-target-display', '.funnel-stage-label', '.funnel-stage-numbers', '.checklist-text', '.domain-name', '.domain-count-badge']) {
       document.querySelectorAll(selector).forEach((element, index) => {
         check(`${selector}[${index}]`, getComputedStyle(element).color, background(element), 4.5);
       });
@@ -50,6 +50,9 @@ async function contrastReport(page) {
     });
     const line = document.querySelector('.chart-line');
     if (line) check('activity chart line', getComputedStyle(line).stroke, background(line), 3);
+    document.querySelectorAll('.funnel-fill, .goal-progress-bar').forEach((element, index) => {
+      check(`complementary chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
+    });
     document.querySelectorAll('.distribution-track > div').forEach((element, index) => {
       check(`status chart bar ${index}`, getComputedStyle(element).backgroundColor, background(element.parentElement), 3);
     });
@@ -84,6 +87,7 @@ test('dark palette: readable text, charts and all statuses; light palette unchan
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(17, 24, 39)');
   expect(await page.locator('.chart-line').evaluate((element) => getComputedStyle(element).stroke)).toBe('rgb(196, 181, 253)');
+  await page.locator('.extras-disclosure > summary').click();
   const dashboard = await contrastReport(page);
 
   // Check the actual modal and a failed-save error in the dark theme too.

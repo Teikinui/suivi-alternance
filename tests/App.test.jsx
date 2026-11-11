@@ -4,6 +4,7 @@ import { fireEvent, render, screen, within, waitFor } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import App from '../src/App.jsx';
 import { EMPTY_APPLICATION } from '../shared/domain.js';
+import * as exportModule from '../src/export.js';
 
 const item = { ...EMPTY_APPLICATION, id: 1, company: 'Horizon', position: 'Développeuse', status: 'Candidature envoyée', appliedAt: '2026-03-20', archived: false };
 let rows;
@@ -195,6 +196,93 @@ describe('application interface', () => {
     expect(localStorage.getItem('theme')).toBe('dark');
     await user.click(screen.getByRole('button', { name: 'Activer le mode clair' }));
     expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it.each([[2, '2026-03-27'], [7, '2026-04-01']])('snoozes a due follow-up by %i local calendar days without changing other fields', async (days, expected) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 2, 25, 23, 45));
+    rows[0].followUpAt = '2026-03-01';
+    rows[0].contact = 'rh@example.com';
+    rows[0].url = 'https://example.com/job';
+    const user = userEvent.setup();
+    render(<App />);
+    const report = await screen.findByRole('button', { name: `Reporter Horizon de ${days} jours à partir d’aujourd’hui` });
+    expect(screen.getByRole('link', { name: 'rh@example.com' })).toHaveAttribute('href', 'mailto:rh%40example.com');
+    expect(screen.getByRole('link', { name: 'Voir l’offre de Horizon' })).toHaveAttribute('href', rows[0].url);
+    await user.click(report);
+    await waitFor(() => expect(rows[0].followUpAt).toBe(expected));
+    expect(rows[0].status).toBe('Candidature envoyée');
+    const patch = fetch.mock.calls.find(([, options]) => options.method === 'PATCH');
+    expect(JSON.parse(patch[1].body)).toEqual({ followUpAt: expected });
+    expect(await screen.findByText('Aucune relance à traiter. Vous êtes à jour !')).toBeInTheDocument();
+  });
+
+  it('keeps due actions on a failed snooze, shows the error and allows retry', async () => {
+    rows[0].followUpAt = '2000-01-01';
+    const user = userEvent.setup();
+    render(<App />);
+    const report = await screen.findByRole('button', { name: 'Reporter Horizon de 2 jours à partir d’aujourd’hui' });
+    fetch.mockRejectedValueOnce(new Error('Report indisponible'));
+    await user.click(report);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Report indisponible');
+    expect(rows[0].followUpAt).toBe('2000-01-01');
+    expect(report).toBeEnabled();
+    await user.click(report);
+    await waitFor(() => expect(rows[0].followUpAt).not.toBe('2000-01-01'));
+  });
+
+  it('combines the quick due filter with search/status and excludes archives from actions', async () => {
+    rows[0].followUpAt = '2000-01-01';
+    rows.push({ ...item, id: 2, company: 'Future', followUpAt: '2999-01-01' }, { ...item, id: 3, company: 'Archive', followUpAt: '2000-01-01', archived: true });
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Future' });
+    await user.click(screen.getByRole('button', { name: 'Relances à faire (1)' }));
+    expect(screen.getByRole('button', { name: 'Relances à faire (1)' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('heading', { name: 'Future' })).not.toBeInTheDocument();
+    await user.type(screen.getByRole('searchbox'), 'absent');
+    expect(screen.getByText(/Aucune candidature ne correspond/)).toBeInTheDocument();
+    // The action center ignores search filters and still exposes the due item.
+    expect(screen.getByRole('button', { name: 'Ouvrir Horizon — Développeuse' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Réinitialiser' }));
+    expect(screen.getByRole('heading', { name: 'Future' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Archives', exact: true }));
+    await screen.findByRole('heading', { name: 'Archive' });
+    expect(screen.queryByText('À traiter aujourd’hui')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Relances à faire/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the interview access snapshot and explicitly declines an invented response delay', async () => {
+    rows.push({ ...item, id: 2, company: 'Entretien', status: 'Entretien prévu' }, { ...item, id: 3, company: 'Offre', status: 'Offre reçue' }, { ...item, id: 4, company: 'Refus', status: 'Refusé' }, { ...item, id: 5, company: 'Brouillon', status: 'À postuler' });
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Horizon' });
+    const card = screen.getByText('Accès aux entretiens').closest('.stat-card');
+    expect(within(card).getByText('50%')).toBeInTheDocument();
+    expect(within(card).getByText('2 entretien(s) ou offre(s) / 4 envoyée(s)')).toBeInTheDocument();
+    await user.click(screen.getByText('Comprendre les indicateurs'));
+    expect(screen.getByText(/Délai moyen de réponse indisponible/)).toBeInTheDocument();
+  });
+
+  it('exports only the selected active/archive scope and respects filtered versus whole-tab selection', async () => {
+    const download = vi.spyOn(exportModule, 'downloadExport').mockImplementation(() => {});
+    rows.push({ ...item, id: 2, company: 'Seconde' }, { ...item, id: 3, company: 'Archive', archived: true });
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Horizon' });
+    await user.type(screen.getByRole('searchbox'), 'Horizon');
+    await user.click(screen.getByRole('button', { name: 'Exporter CSV' }));
+    expect(download.mock.calls[0][0].applications.map((row) => row.id)).toEqual([1]);
+    expect(download.mock.calls[0][1]).toBe('csv');
+    await user.selectOptions(screen.getByLabelText('Périmètre de l’export'), 'tab');
+    await user.click(screen.getByRole('button', { name: 'Exporter JSON' }));
+    expect(download.mock.calls[1][0].applications.map((row) => row.id).sort()).toEqual([1, 2]);
+    await user.click(screen.getByRole('button', { name: 'Effacer la recherche' }));
+    await user.click(screen.getByRole('button', { name: 'Archives', exact: true }));
+    await screen.findByRole('heading', { name: 'Archive' });
+    await user.click(screen.getByRole('button', { name: 'Exporter JSON' }));
+    expect(download.mock.calls[2][0].applications.map((row) => row.id)).toEqual([3]);
+    expect(download.mock.calls[2][0].scope.archived).toBe(true);
   });
 
   it('displays a visible toast notification on action and allows dismissing it', async () => {

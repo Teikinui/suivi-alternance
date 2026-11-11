@@ -50,6 +50,16 @@ Pour une publication réseau, ajoutez d’abord un reverse proxy HTTPS avec auth
 - Formulaire organisé en « L’opportunité » et « Le suivi », compteur de notes associé au champ (limite de 10 000 caractères). À l’ajout, la date locale du jour est préremplie et modifiable ; en édition, la date existante est conservée.
 - Le bouton lune/soleil mémorise votre thème dans ce navigateur ; le premier thème suit le système.
 
+### Centre d’action et filtre de relances
+
+« **À traiter aujourd’hui** » est repliable au clavier et liste les candidatures **actives** ayant une date de relance aujourd’hui ou antérieure, tous statuts confondus. Les plus anciennes apparaissent d’abord. Les candidatures archivées, sans échéance ou à échéance future n’y figurent pas. Cette liste ne dépend pas de la recherche ni des filtres du tableau.
+
+- Ouvrez une candidature depuis son entreprise/poste ; l’offre s’ouvre dans un nouvel onglet sécurisé.
+- Un contact contenant seulement un e-mail ou un téléphone devient un lien mail/téléphone. Les contacts libres restent affichés sans lien automatique ; ouvrez la candidature pour les consulter ou les modifier.
+- **+2 jours / +7 jours** reporte l’échéance à **aujourd’hui +2/+7 jours calendaires locaux**, même si l’ancienne date était très dépassée. Le statut, les notes et les autres champs restent inchangés. Le report utilise le champ SQLite existant `followUpAt`, sans migration de base. En cas d’échec, la relance reste dans la liste et une erreur permet de réessayer.
+- **Relances à faire** filtre Kanban/tableau sur ces mêmes candidatures dues. Il se combine avec recherche/statut/tri. « Réinitialiser » efface recherche, statut et filtre de relance. Le passage entre onglets désactive ce filtre rapide ; les archives restent consultables normalement.
+- Les échéances suivent le calendrier local du navigateur (y compris changements de mois/année/heure), actualisé chaque minute si l’application reste ouverte.
+
 ### Statistiques et graphiques
 
 Les indicateurs portent sur **toutes les candidatures de l’onglet actif ou Archives**, sans dépendre des filtres de recherche.
@@ -57,8 +67,30 @@ Les indicateurs portent sur **toutes les candidatures de l’onglet actif ou Arc
 - **Total** : nombre de candidatures de cet onglet.
 - **Taux de réponse** : `(entretiens prévus + offres reçues + refus) / candidatures hors « À postuler » × 100`, arrondi ; 0 si aucune candidature envoyée. C’est une estimation à partir du statut actuel, pas une mesure de l’historique des réponses.
 - **Entretiens / refus** : nombres actuellement dans ces statuts.
+- **Accès aux entretiens** : `(nombre au statut « Entretien prévu » OU « Offre reçue ») / nombre hors « À postuler » × 100`, arrondi, 0 si le dénominateur est nul. Chaque candidature compte une seule fois, une offre n’est pas ajoutée une seconde fois au total des entretiens. Exemple : 1 envoyée + 1 entretien + 1 offre + 1 refus + 1 brouillon = **2 / 4 = 50 %**. C’est un instantané estimé : un refus après entretien n’est pas identifiable et une offre ne prouve pas qu’un entretien a eu lieu.
 - **Courbe d’activité** : candidatures datées regroupées par semaine (lundi à dimanche) sur les 8 dernières semaines, semaine courante incluse. Dates absentes et futures ignorées. La date de candidature renseignée fait foi, même si le statut est ensuite modifié.
 - **Répartition** : nombres et pourcentages par statut ; les arrondis peuvent ne pas totaliser exactement 100 %.
+
+**Délai moyen de réponse non calculable avec les données actuelles.** `appliedAt` indique la candidature, mais aucune date de première réponse ni transition de statut n’est enregistrée. `updatedAt` peut correspondre à une note, un archivage ou un report de relance : l’utiliser inventerait des délais. Aucun KPI chiffré de délai n’est affiché. Solution future à faire approuver : ajouter explicitement une date de première réponse (et, pour une durée précise plutôt que des jours calendaires, des horodatages d’envoi/réponse), ou un journal de transitions datées. La migration devrait laisser les anciennes dates inconnues à `NULL`, sans déduction ni rétro-remplissage automatique. **Aucune migration DB dans cette livraison.**
+
+### Panneaux complémentaires
+
+Le panneau repliable « Objectif, préparation et domaines d’offres » contient l’objectif hebdomadaire (cible 1–50), un funnel des statuts actuels, une checklist générale de préparation d’entretien et les cinq domaines web d’offres les plus fréquents. Objectif/funnel/domaines portent sur l’onglet courant, indépendamment des filtres de recherche. L’activité hebdomadaire utilise les dates de candidature renseignées, du lundi au dimanche, sans dates futures ni statuts « À postuler » ; ce n’est pas un historique d’envois immuable. Les domaines sont extraits des URL HTTP(S) : ils ne constituent **pas** un canal de provenance déclaré (réseau, recommandation, candidature spontanée…).
+
+La cible hebdomadaire et la checklist sont des préférences **de ce navigateur**, stockées sous `candidatures_weekly_goal` et `candidatures_interview_checklist`, hors SQLite et hors sauvegarde `./data`. La checklist est générale, pas propre à chaque candidature. Elles ne sont ni synchronisées ni incluses dans les exports. Ne les utilisez pas comme unique stockage d’une information importante.
+
+### Export CSV / JSON côté client
+
+Les boutons d’export ne nécessitent aucune nouvelle route API ni service tiers. Ils téléchargent uniquement les données déjà chargées dans votre navigateur :
+
+- **Résultats filtrés** (par défaut) : candidatures visibles selon recherche, statut, tri et filtre rapide de relance.
+- **Tout l’onglet** : toutes les candidatures de l’onglet courant, sans ces filtres.
+- L’onglet **Mes candidatures** n’exporte jamais les archives ; **Archives** n’exporte jamais les actives. Pour tout exporter, effectuez un export dans chaque onglet. Un ensemble vide produit un JSON vide ou un CSV contenant seulement les en-têtes.
+- Le JSON v1 inclut le périmètre, les filtres, l’horodatage d’export et tous les champs de candidature (dont ID, archive et dates techniques). Il conserve exactement les textes, accents et retours à la ligne.
+- Le CSV utilise UTF-8 avec BOM, une virgule comme séparateur, CRLF entre enregistrements, tous les champs entre guillemets et les guillemets internes doublés. Les virgules/retours à la ligne dans les notes restent dans leur cellule. Dans un tableur, sélectionnez UTF-8 et séparateur virgule si nécessaire.
+- Pour réduire le risque de formules de tableur, les cellules textuelles commençant par `=`, `+`, `-`, `@` (même après espaces), tabulation ou retour ligne sont préfixées d’une apostrophe dans le CSV. Utilisez **JSON** pour une copie textuelle sans cette transformation.
+
+**Confidentialité :** ces fichiers contiennent vos notes, contacts et données personnelles. Stockez-les en lieu sûr ; ne les commitez pas. Aucun import automatique n’est livré ; CSV/JSON ne remplacent pas la sauvegarde cohérente du dossier SQLite décrite ci-dessous.
 
 ## Sauvegarde fiable
 
@@ -165,38 +197,45 @@ Sur Windows avec Node 24, les commandes ont réellement été exécutées :
 
 | Vérification | Résultat |
 | --- | --- |
-| `npm test` | 22 tests API/SQLite + 25 tests React/métier réussis |
-| `npm run build` | Build Vite réussi (JS ~240 kB, ~75 kB gzip) |
-| `npm run test:e2e` | 8 tests Chromium réussis : desktop/mobile, clavier, contrastes et invariants de palette, captures clair/sombre inspectées |
+| `npm test` | 22 tests API/SQLite + 77 tests Vitest (composants React, domaine, exports et extras) = **99 tests réussis** |
+| `npm run build` | Build Vite réussi (JS ~256 kB, ~79 kB gzip, CSS ~30 kB, ~7 kB gzip) |
+| `npm run test:e2e` | **14 tests Chromium réussis** : desktop/mobile, action center, exports réels CSV/JSON, panels complémentaires, contrastes WCAG AA et captures d’écran |
 | `npm audit` | 0 vulnérabilité signalée |
 | `docker compose config --quiet` | Réussite ; montage local `./data` confirmé par la configuration résolue |
-| `docker compose build` | Tenté, bloqué par le moteur Docker Desktop Linux arrêté (`dockerDesktopLinuxEngine` introuvable) |
-
-**Limite de validation :** l’image et le cycle démarrage/redémarrage Docker ne sont pas validés en exécution tant que le moteur n’est pas disponible. La persistance SQLite après fermeture/réouverture est couverte par les tests API. Lancez la recette Docker ci-dessus une fois Docker Desktop démarré.
+| `docker compose build` | **Réussite complète** (Docker Engine 29.6.2, build multi-stage et test conteneur isolé avec `/api/health` OK) |
 
 ## Architecture
 
 ```text
 .
-├── Dockerfile                 # Build multi-stage, runtime Node non-root
-├── docker-compose.yml         # App + préparation des droits, bind mount ./data
+├── Dockerfile                     # Build multi-stage, runtime Node non-root
+├── docker-compose.yml             # App + préparation des droits, bind mount ./data
 ├── package.json / package-lock.json
 ├── index.html / vite.config.js / playwright.config.js
 ├── server/
-│   ├── index.js               # Démarrage et arrêt propre
-│   ├── app.js                 # API Express, validation, sécurité, fichiers statiques
-│   └── db.js                  # SQLite, WAL, schéma v1
-├── shared/domain.js           # Statuts, filtres, calculs statistiques
+│   ├── index.js                   # Démarrage et arrêt propre
+│   ├── app.js                     # API Express, validation, sécurité, fichiers statiques
+│   └── db.js                      # SQLite, WAL, schéma v1
+├── shared/
+│   ├── domain.js                  # Statuts, filtres, calculs statistiques, libellés relatifs
+│   ├── dashboard.js               # Sélection filtrée, relances dues, accès aux entretiens, liens contacts
+│   └── dashboard-extras.js        # Objectif hebdomadaire, funnel actuel, checklist, domaines d'offres
 ├── src/
 │   ├── main.jsx
-│   ├── App.jsx                # Kanban/tableau, formulaires, archives, thème
-│   ├── Charts.jsx             # Courbe hebdomadaire et répartition
-│   └── styles.css             # Tailwind + composants responsive
+│   ├── App.jsx                    # Kanban/tableau, formulaires, filtres relances, archives, thème
+│   ├── ActionCenter.jsx           # Centre repliable « À traiter aujourd'hui », reports +2/+7j
+│   ├── DashboardExtras.jsx        # Volet repliable : objectif hebdo, funnel, checklist, domaines
+│   ├── Charts.jsx                 # Courbe hebdomadaire et répartition des statuts
+│   ├── Toast.jsx                  # Notifications visuelles et accessibles de confirmation
+│   ├── export.js                  # Export client CSV (sécurisé formules) et JSON v1
+│   ├── styles.css                 # Tailwind + composants principaux et responsive
+│   └── dashboard-extras.css       # Styles dédiés aux indicateurs complémentaires
 ├── tests/
 │   ├── api.test.js / domain.test.js / App.test.jsx / setup.js
+│   ├── dashboard.test.js / DashboardExtras.test.jsx / Toast.test.jsx
 │   ├── e2e-server.js
-│   └── e2e/app.spec.js / theme.spec.js
-└── data/                      # Créé automatiquement, jamais versionné
+│   └── e2e/app.spec.js / dashboard.spec.js / theme.spec.js
+└── data/                          # Créé automatiquement, jamais versionné
 ```
 
 API JSON : `GET /api/health`, `GET /api/applications[?archived=true]`, `POST /api/applications`, `PATCH /api/applications/:id`, `DELETE /api/applications/:id`. Réponses d’erreur `{ "error": "message" }`. L’archivage/restauration utilise `PATCH { "archived": true/false }`.
