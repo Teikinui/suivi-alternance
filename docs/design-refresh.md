@@ -81,6 +81,18 @@ Les six nouveaux scénarios (trois exécutés sur chaque projet desktop/mobile) 
 
 **Limites :** Chromium émulé, sans appareil physique, Safari/Firefox, lecteur d’écran, audit WCAG complet ou benchmark de forte volumétrie. Aucun résultat n’est revendiqué pour ces vérifications non effectuées. La capture visuelle ne remplace pas ces tests.
 
+## Revue additionnelle — 12 novembre 2026
+
+Skill projet rechargé (`context --target src/App.jsx`, références critique/audit/polish). Assessment A visuelle avant les nouveaux résultats du détecteur ; **⚠️ DEGRADED: single-context**, sans sous-agent disponible. Captures fraîches clair/nuit, source et tableau réel examinés sur données fictives en mémoire. L’identité, les groupes métier et l’accès direct au suivi restent appropriés : aucune refonte justifiée.
+
+**Un défaut P2 concret :** les en-têtes `th` et commandes `.table-actions button` étaient encore à **11px**, sous le plancher documentaire de 12px pour ces textes. Valeurs confirmées dans Chromium ; nouvelle assertion de régression d’abord en échec sur les deux projets (11 reçu, 12 attendu). Seules ces deux déclarations passent à **12px** ; aucun changement de couleurs, contenu ou comportement.
+
+Critique indicative : **30/40**, dix heuristiques à 3/4 ; audit indicatif **15/20**, cinq dimensions à 3/4. Le défaut local identifié est corrigé, sans prétendre à une certification. Alex conserve l’accès direct et les commandes ; Sam et Casey bénéficient de libellés de tableau alignés sur l’échelle existante. Questions skipped: 1 Priority Issue, périmètre déjà autorisé.
+
+Validation après correction : **8 scénarios Chromium ciblés réussis** (design-refresh et theme, desktop/mobile), build réussi ; scans Impeccable source et dashboard rendu à 390×844 / 1440×900 : **0 signalement**, exit 0. Le scan URL ouvre le Kanban par défaut ; le tableau est donc contrôlé séparément : textes à 12px en clair/nuit sur 390 et 1440px, sans débordement global, et défilement clavier testé. Captures après correction examinées. Aucun ignore de règle ajouté.
+
+Aperçu local arrêté après vérification ; snapshots/captures restent ignorés. `STATUS.md`, préexistant et non suivi, est laissé intact et exclu du commit. Pas de modification métier, données, secrets ou merge. Restent non vérifiés : appareils physiques, autres moteurs et lecteurs d’écran.
+
 ## Périmètre protégé
 
 Aucun admin/auth/compte, changement de serveur, logique métier partagée, schéma, migration, dépendance/lockfile ou exposition réseau. Aucun accès/modification aux données réelles ni secrets. Binaires plateforme, dépendances, captures, caches, rapports de test et sorties de build exclus du commit. Sources/licence du skill conservées comme outillage de développement, exclues du contexte Docker.

@@ -47,6 +47,9 @@ test('keyboard skip link, scrollable table and mobile form remain fully operable
   await expect(page.getByRole('region', { name: 'Suivi des candidatures', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Vue Tableau' }).click();
   const tableRegion = page.getByRole('region', { name: 'Tableau défilant des candidatures' });
+  const tableTextSizes = await tableRegion.locator('th, .table-actions button').evaluateAll((elements) => elements.map((element) => parseFloat(getComputedStyle(element).fontSize)));
+  expect(tableTextSizes.length).toBeGreaterThan(0);
+  expect(Math.min(...tableTextSizes)).toBeGreaterThanOrEqual(12);
   await tableRegion.focus();
   await page.keyboard.press('ArrowRight');
   await expect.poll(() => tableRegion.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
