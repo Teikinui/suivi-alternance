@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Icon from './Icon.jsx';
 import { generateBookmarkletCode } from '../shared/job-extractors/index.js';
 
 export default function BookmarkletModal({ onClose }) {
@@ -22,7 +23,7 @@ export default function BookmarkletModal({ onClose }) {
     catch { setMessage('Copie automatique indisponible. Ouvrez l’installation manuelle puis sélectionnez et copiez le code.'); }
   }
   return <dialog ref={dialog} className="editor bookmarklet-dialog" aria-labelledby="bookmarklet-title" onCancel={(event) => { event.preventDefault(); onClose(); }}>
-    <div className="dialog-heading"><div><p className="eyebrow">CAPTURE D’UNE OFFRE OUVERTE</p><h2 id="bookmarklet-title">Installer le bookmarklet</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Fermer le guide">×</button></div>
+    <div className="dialog-heading"><div><h2 id="bookmarklet-title">Installer le bookmarklet</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Fermer le guide"><Icon name="close" /></button></div>
     <p className="bookmarklet-intro">Un favori qui lit l’offre dans l’onglet ouvert et prépare une candidature « À postuler ». Rien n’est enregistré avant votre confirmation et rien n’est envoyé au recruteur.</p>
     <div className="bookmarklet-step">
       <label htmlFor="bookmarklet-origin">Adresse de votre application</label>
@@ -33,7 +34,7 @@ export default function BookmarkletModal({ onClose }) {
     <section className="bookmarklet-step" aria-labelledby="bookmarklet-install">
       <h3 id="bookmarklet-install">1. Installez votre favori</h3>
       <p>Affichez la barre de favoris (Ctrl/Cmd + Maj + B sur Chrome/Firefox), puis glissez ce lien dans la barre :</p>
-      <div className="bookmarklet-drag-area"><a ref={bookmark} className="button primary bookmarklet-badge" draggable={Boolean(code)} aria-disabled={!code} onClick={(event) => { event.preventDefault(); setMessage('Glissez le lien dans la barre de favoris ou utilisez l’installation manuelle ci-dessous.'); }} title="À glisser dans la barre de favoris">＋ Suivre l’offre</a><button type="button" className="button secondary" disabled={!code} onClick={copyCode}>Copier le code</button></div>
+      <div className="bookmarklet-drag-area"><a ref={bookmark} className="button primary bookmarklet-badge" draggable={Boolean(code)} aria-disabled={!code} onClick={(event) => { event.preventDefault(); setMessage('Glissez le lien dans la barre de favoris ou utilisez l’installation manuelle ci-dessous.'); }} title="À glisser dans la barre de favoris"><Icon name="plus" />Suivre l’offre</a><button type="button" className="button secondary" disabled={!code} onClick={copyCode}>Copier le code</button></div>
       <details className="bookmarklet-manual"><summary>Installation manuelle et code</summary><p>Créez un favori « Suivre l’offre », puis remplacez son adresse par le code complet ci-dessous. Certains navigateurs retirent le préfixe : vérifiez que l’adresse commence bien par <code>javascript:</code>.</p><label htmlFor="bookmarklet-code">Code du bookmarklet</label><textarea id="bookmarklet-code" ref={codeField} readOnly value={code} rows={4} spellCheck={false} /><button type="button" className="button secondary" disabled={!code} onClick={() => { codeField.current.focus(); codeField.current.select(); }}>Sélectionner le code</button></details>
     </section>
     <section className="bookmarklet-step" aria-labelledby="bookmarklet-use"><h3 id="bookmarklet-use">2. Capturez et vérifiez une offre</h3><ol><li>Ouvrez la page détaillée d’une offre HTTP(S), puis cliquez sur votre favori.</li><li>L’application s’ouvre dans un nouvel onglet avec un formulaire modifiable, pas une candidature enregistrée.</li><li>Vérifiez entreprise, poste, lien, lieu et salaire ; complétez les champs manquants, puis choisissez Enregistrer ou Annuler.</li></ol></section>

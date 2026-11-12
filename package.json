@@ -13,7 +13,9 @@
     "test": "node --test tests/api.test.js && vitest run",
     "test:api": "node --test tests/api.test.js",
     "test:ui": "vitest run",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "design:preview": "node tests/design-preview.mjs",
+    "design:detect": "npx --yes impeccable@4.8.2 detect src/"
   },
   "dependencies": {
     "express": "^5.1.0",
